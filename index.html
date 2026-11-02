@@ -3,432 +3,455 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>吳世賢SDGs 不塑永續-淨灘</title>
+    <title>吳世賢SDGs 體重與健康管理 - BMI 計算器</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            user-select: none;
-            overflow: hidden;
-            background-color: #0c4a6e;
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            min-height: 100vh;
         }
 
-        /* 浮點得分動畫 */
-        @keyframes floatUp {
-            0% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(0.8);
-            }
-            50% {
-                opacity: 1;
-                transform: translate(-50%, -100%) scale(1.2);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -150%) scale(1);
-            }
-        }
-        .score-float {
-            position: absolute;
-            animation: floatUp 0.8s ease-out forwards;
-            pointer-events: none;
-            font-weight: 900;
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.5);
-            z-index: 50;
+        /* 儀表板指針平滑過渡 */
+        .gauge-pointer {
+            transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 海浪動畫 */
-        @keyframes waveMove {
-            0% { transform: translateX(0) scaleY(1); }
-            50% { transform: translateX(-25px) scaleY(1.05); }
-            100% { transform: translateX(0) scaleY(1); }
-        }
-        .animate-wave {
-            animation: waveMove 4s ease-in-out infinite;
-        }
-
-        /* 垃圾懸停與點擊效果 */
-        .trash-item {
-            transition: transform 0.15s ease, filter 0.15s ease;
-            cursor: pointer;
-            position: absolute;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
-        }
-        .trash-item:hover {
-            filter: drop-shadow(0 6px 12px rgba(255, 255, 255, 0.6)) brightness(1.15);
-        }
-        .trash-item:active {
-            transform: scale(0.8) !important;
-        }
-
-        /* 閃爍亮光效果 */
-        @keyframes sparkle {
-            0%, 100% { opacity: 0.3; transform: scale(0.8); }
-            50% { opacity: 1; transform: scale(1.2); }
-        }
-        .sparkle-bg {
-            animation: sparkle 3s infinite ease-in-out;
+        /* 漸變與陰影微調 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
         }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col justify-between relative">
+<body class="flex flex-col min-h-screen text-slate-800">
 
-    <!-- 頂部資訊列 (Header) -->
-    <header class="w-full bg-slate-900/80 backdrop-blur-md text-white px-4 md:px-8 py-3 flex justify-between items-center z-40 border-b border-cyan-500/30 shadow-lg">
-        <!-- 左上角標題 -->
-        <div class="flex items-center space-x-3">
-            <div class="bg-gradient-to-tr from-emerald-500 to-cyan-400 p-2 rounded-xl text-white shadow-md">
-                <i class="fa-solid font-bold fa-leaf text-xl md:text-2xl"></i>
-            </div>
-            <div>
-                <h1 class="text-xl md:text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-200 to-cyan-400">
-                    吳世賢SDGs 不塑永續-淨灘
-                </h1>
-                <p class="text-xs text-cyan-200/80 hidden sm:block">守護海洋環境 • 齊心清理海岸垃圾</p>
-            </div>
-        </div>
-
-        <!-- 右上角數據統計與控制按鈕 -->
-        <div class="flex items-center space-x-4 md:space-x-6">
-            <!-- 剩餘關卡/進度資訊 -->
-            <div class="bg-slate-800/90 border border-slate-700 px-3 md:px-4 py-1.5 rounded-xl flex items-center space-x-4 shadow-inner">
-                <div class="text-center">
-                    <span class="text-xs text-slate-400 block">關卡</span>
-                    <span id="level-display" class="text-base md:text-lg font-bold text-amber-400">第 1 關</span>
+    <!-- 頂部頁首 (Header) -->
+    <header class="w-full bg-emerald-700/95 backdrop-blur-md text-white px-4 md:px-8 py-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center space-x-3 w-full sm:w-auto">
+                <div class="bg-white/20 p-2.5 rounded-2xl text-emerald-100 flex items-center justify-center">
+                    <i class="fa-solid fa-heart-pulse text-2xl md:text-3xl"></i>
                 </div>
-                <div class="h-6 w-[1px] bg-slate-700"></div>
-                <div class="text-center">
-                    <span class="text-xs text-slate-400 block">已清理</span>
-                    <span id="progress-display" class="text-base md:text-lg font-bold text-emerald-400">0 / 50</span>
-                </div>
-                <div class="h-6 w-[1px] bg-slate-700"></div>
-                <div class="text-center">
-                    <span class="text-xs text-slate-400 block">當前積分</span>
-                    <span id="score-display" class="text-xl md:text-2xl font-black text-cyan-300">0</span>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-black tracking-wide text-white">
+                        吳世賢SDGs 體重與健康管理 - BMI 計算器
+                    </h1>
+                    <p class="text-xs text-emerald-100/80">SDG 3 良好健康與福祉 • 打造個人與環境雙贏的永續生活方式</p>
                 </div>
             </div>
-
-            <!-- 重新開始按鈕 -->
-            <button onclick="restartGame()" class="hidden md:flex items-center space-x-1 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg text-sm font-bold transition shadow">
-                <i class="fa-solid fa-rotate-right"></i>
-                <span>重來</span>
-            </button>
+            
+            <div class="text-xs bg-emerald-800/60 px-3 py-1.5 rounded-full text-emerald-200 border border-emerald-500/40 hidden md:block">
+                <i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i>台灣衛福部建議標準
+            </div>
         </div>
     </header>
 
-    <!-- 主遊戲畫面 (海灘與天空區域) -->
-    <main id="game-container" class="relative w-full flex-1 flex flex-col justify-end overflow-hidden">
+    <!-- 主要內容區 -->
+    <main class="max-w-6xl mx-auto w-full px-4 py-6 md:py-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+        
+        <!-- 左側：輸入與計算卡片 (5 欄) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+            <div class="glass-card rounded-3xl p-6 md:p-8 shadow-xl">
+                <div class="flex items-center justify-between mb-6 border-b pb-3 border-slate-200/80">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-emerald-600"></i> 輸入身體數據
+                    </h2>
+                    <span class="text-xs text-slate-400">請輸入公制單位</span>
+                </div>
 
-        <!-- 上半部：藍天與海洋背景 (佔據上半 45%) -->
-        <div class="absolute top-0 left-0 w-full h-[45%] bg-gradient-to-b from-sky-400 via-cyan-500 to-blue-600 z-0 overflow-hidden">
-            <!-- 太陽與雲朵裝飾 -->
-            <div class="absolute top-6 left-12 w-16 h-16 bg-amber-300 rounded-full blur-md opacity-80"></div>
-            <div class="absolute top-10 left-10 text-amber-200 text-5xl opacity-90"><i class="fa-solid fa-sun"></i></div>
-            
-            <div class="absolute top-8 left-[30%] text-white/40 text-4xl sparkle-bg"><i class="fa-solid fa-cloud"></i></div>
-            <div class="absolute top-16 left-[70%] text-white/30 text-5xl sparkle-bg" style="animation-delay: 1.5s;"><i class="fa-solid fa-cloud"></i></div>
-            
-            <!-- 海浪漸層與動態波浪邊緣 -->
-            <div class="absolute bottom-0 left-0 w-full">
-                <!-- 後層海浪 -->
-                <svg class="w-[120%] h-12 text-cyan-400/50 animate-wave relative -left-4" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                    <path d="M0,0 C150,90 350,-40 500,40 C650,120 900,20 1200,60 L1200,120 L0,120 Z" fill="currentColor"></path>
-                </svg>
-                <!-- 前層浪花 -->
-                <svg class="w-[110%] h-10 text-amber-100/70 animate-wave -mt-6 relative -left-2" style="animation-delay: -2s;" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                    <path d="M0,30 C200,70 400,10 600,50 C800,90 1000,20 1200,40 L1200,120 L0,120 Z" fill="currentColor"></path>
-                </svg>
+                <form id="bmiForm" onsubmit="event.preventDefault(); calculateBMI();" class="space-y-5">
+                    <!-- 身高輸入 -->
+                    <div>
+                        <label for="height" class="block text-sm font-bold text-slate-700 mb-1">
+                            身高 (cm)
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-ruler-vertical"></i>
+                            </div>
+                            <input type="number" id="height" step="0.1" min="50" max="250" placeholder="例如：170" required
+                                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-slate-800 font-semibold text-lg"
+                                oninput="validateInputs()">
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">範圍：50 ~ 250 cm</p>
+                    </div>
+
+                    <!-- 體重輸入 -->
+                    <div>
+                        <label for="weight" class="block text-sm font-bold text-slate-700 mb-1">
+                            體重 (kg)
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-weight-scale"></i>
+                            </div>
+                            <input type="number" id="weight" step="0.1" min="20" max="300" placeholder="例如：65" required
+                                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-slate-800 font-semibold text-lg"
+                                oninput="validateInputs()">
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">範圍：20 ~ 300 kg</p>
+                    </div>
+
+                    <!-- 操作按鈕 -->
+                    <div class="pt-2 flex gap-3">
+                        <button type="submit" id="btnCalculate"
+                            class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2 text-base">
+                            <i class="fa-solid fa-bolt"></i> 計算 BMI
+                        </button>
+                        <button type="button" onclick="resetForm()"
+                            class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 rounded-xl transition active:scale-95 text-sm">
+                            重置
+                        </button>
+                    </div>
+                </form>
             </div>
-        </div>
 
-        <!-- 下半部：沙灘區域 (佔據下半 55%) -->
-        <div id="beach-area" class="relative w-full h-[55%] bg-gradient-to-b from-amber-200 via-amber-300 to-yellow-500 border-t-4 border-amber-100/50 z-10 shadow-inner">
+            <!-- 衛福部標準對照表小卡 -->
+            <div class="glass-card rounded-3xl p-6 shadow-lg text-xs space-y-2">
+                <h3 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-table-list text-emerald-600"></i> 衛生福利部 BMI 體重標準
+                </h3>
+                <div class="grid grid-cols-2 gap-2 text-slate-600">
+                    <div class="p-2 rounded-lg bg-sky-50 border border-sky-200 flex justify-between">
+                        <span>過輕</span><strong class="text-sky-600">&lt; 18.5</strong>
+                    </div>
+                    <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 flex justify-between">
+                        <span>正常範圍</span><strong class="text-emerald-600">18.5 - 23.9</strong>
+                    </div>
+                    <div class="p-2 rounded-lg bg-amber-50 border border-amber-200 flex justify-between">
+                        <span>過重</span><strong class="text-amber-600">24.0 - 26.9</strong>
+                    </div>
+                    <div class="p-2 rounded-lg bg-orange-50 border border-orange-200 flex justify-between">
+                        <span>輕度肥胖</span><strong class="text-orange-600">27.0 - 29.9</strong>
+                    </div>
+                    <div class="p-2 rounded-lg bg-rose-50 border border-rose-200 flex justify-between">
+                        <span>中度肥胖</span><strong class="text-rose-600">30.0 - 34.9</strong>
+                    </div>
+                    <div class="p-2 rounded-lg bg-red-100 border border-red-300 flex justify-between">
+                        <span>重度肥胖</span><strong class="text-red-700">≥ 35.0</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側：結果展示與健康提示 (7 欄) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
             
-            <!-- 沙灘紋理裝飾細節 (貝殼/小石子) -->
-            <div class="absolute top-8 left-[15%] text-amber-600/30 text-lg"><i class="fa-solid fa-note-sticky rotate-12"></i></div>
-            <div class="absolute top-20 right-[25%] text-amber-700/20 text-xl"><i class="fa-solid fa-cubes"></i></div>
-            <div class="absolute bottom-12 left-[40%] text-amber-800/20 text-sm"><i class="fa-solid fa-circle"></i></div>
-            <div class="absolute bottom-8 right-[10%] text-amber-700/30 text-2xl"><i class="fa-solid fa-water"></i></div>
+            <!-- 主要結果視覺卡片 -->
+            <div class="glass-card rounded-3xl p-6 md:p-8 shadow-xl flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-600"></i> 計算結果儀表
+                    </h2>
+                    <span id="categoryBadge" class="px-3 py-1 rounded-full text-xs font-black bg-slate-200 text-slate-600">
+                        待計算
+                    </span>
+                </div>
 
-            <!-- 50 個垃圾會由 JavaScript 動態渲染在此區域內 -->
-        </div>
+                <!-- 數值焦點 -->
+                <div class="text-center py-6 bg-slate-50/70 rounded-2xl border border-slate-100 my-2">
+                    <span class="text-slate-400 text-xs font-bold block mb-1">您的 BMI 數值</span>
+                    <div id="bmiValue" class="text-5xl md:text-6xl font-black text-slate-300 tracking-tight">--.--</div>
+                    <p id="idealWeightRange" class="text-xs text-slate-500 mt-2 font-medium">請輸入身高與體重進行計算</p>
+                </div>
+
+                <!-- 視覺色條儀表板 -->
+                <div class="my-6">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
+                        <span>15 (過輕)</span>
+                        <span>18.5</span>
+                        <span>24</span>
+                        <span>27</span>
+                        <span>30</span>
+                        <span>35+</span>
+                    </div>
+
+                    <!-- 分段彩色條 -->
+                    <div class="relative h-4 rounded-full overflow-hidden flex w-full shadow-inner bg-slate-200">
+                        <div class="h-full bg-sky-400" style="width: 17.5%;" title="過輕"></div>
+                        <div class="h-full bg-emerald-500" style="width: 27.5%;" title="正常"></div>
+                        <div class="h-full bg-amber-400" style="width: 15%;" title="過重"></div>
+                        <div class="h-full bg-orange-400" style="width: 15%;" title="輕度肥胖"></div>
+                        <div class="h-full bg-rose-500" style="width: 12.5%;" title="中度肥胖"></div>
+                        <div class="h-full bg-red-700" style="width: 12.5%;" title="重度肥胖"></div>
+
+                        <!-- 游標指針 -->
+                        <div id="gaugePointer" class="gauge-pointer absolute top-0 bottom-0 w-2.5 bg-slate-900 border-2 border-white rounded-full shadow-md -ml-1.25 hidden opacity-0" style="left: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- 個人化建議與 SDGs 生活卡 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <!-- 健康建議 -->
+                    <div class="bg-white/80 p-4 rounded-2xl border border-emerald-100 shadow-sm">
+                        <h4 class="font-bold text-emerald-800 text-sm flex items-center gap-1.5 mb-1.5">
+                            <i class="fa-solid fa-apple-whole text-emerald-600"></i> 個人化健康建議
+                        </h4>
+                        <p id="healthAdvice" class="text-xs text-slate-600 leading-relaxed">
+                            請先完成資料輸入以獲取專屬健康與飲食評估。
+                        </p>
+                    </div>
+
+                    <!-- SDGs 永續提示 -->
+                    <div class="bg-white/80 p-4 rounded-2xl border border-teal-100 shadow-sm">
+                        <h4 class="font-bold text-teal-800 text-sm flex items-center gap-1.5 mb-1.5">
+                            <i class="fa-solid fa-seedling text-teal-600"></i> SDGs 永續行動指示
+                        </h4>
+                        <p id="sdgsAdvice" class="text-xs text-slate-600 leading-relaxed">
+                            結合蔬食減碳、規律運動與低碳出行，促進良好健康與地球和平永續。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 歷史紀錄 -->
+            <div class="glass-card rounded-3xl p-6 shadow-xl flex-1 flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> 計算歷史紀錄
+                    </h3>
+                    <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-500 transition flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can"></i> 清空紀錄
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-[11px] text-slate-400">
+                                <th class="pb-2 font-semibold">時間</th>
+                                <th class="pb-2 font-semibold">身高/體重</th>
+                                <th class="pb-2 font-semibold">BMI</th>
+                                <th class="pb-2 font-semibold">狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyList" class="text-xs divide-y divide-slate-100 text-slate-600">
+                            <!-- 歷史資料列動態插入 -->
+                            <tr>
+                                <td colspan="4" class="py-6 text-center text-slate-400">尚無歷史紀錄</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <!-- 結算彈出視窗 (Modal) -->
-    <div id="success-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-emerald-500/50 rounded-3xl p-6 md:p-8 max-w-md w-11/12 text-center shadow-2xl transform scale-95 transition-transform duration-300 id='modal-card'">
-            
-            <div class="w-20 h-20 bg-emerald-500/20 border-2 border-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-400 text-4xl shadow-lg animate-bounce">
-                <i class="fa-solid fa-trophy"></i>
-            </div>
+    <!-- 頁腳 Footer -->
+    <footer class="w-full bg-slate-900 text-slate-400 py-4 text-center text-xs mt-auto">
+        <p>© 吳世賢SDGs 體重與健康管理計畫 • 響應 SDG 3 良好健康與福祉 & SDG 12 責任消費與生產</p>
+    </footer>
 
-            <h2 class="text-3xl font-black text-white mb-1">任務成功！</h2>
-            <p class="text-emerald-400 text-sm font-semibold mb-4">海岸線恢復了乾淨美好的面貌！</p>
-            
-            <!-- 統計報告數據箱 -->
-            <div class="bg-slate-950/60 rounded-2xl p-4 mb-6 border border-slate-700/60 text-left space-y-2">
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-400">總共清除垃圾：</span>
-                    <span class="text-white font-bold text-base">50 件</span>
-                </div>
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-400">本關卡得分：</span>
-                    <span id="modal-score" class="text-amber-400 font-extrabold text-lg">0 分</span>
-                </div>
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-400">永續評級：</span>
-                    <span id="modal-rating" class="text-emerald-300 font-bold">SDGs 淨灘達人 🌟</span>
-                </div>
-            </div>
-
-            <!-- 操作按鈕 -->
-            <div class="flex flex-col sm:flex-row gap-3">
-                <button onclick="nextLevel()" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center space-x-2">
-                    <span>前往下一關</span>
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
-                <button onclick="restartGame()" class="sm:w-1/3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 px-4 rounded-xl transition transform active:scale-95">
-                    重頭開始
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 遊戲邏輯 JavaScript -->
+    <!-- JavaScript 邏輯處理 -->
     <script>
-        // 垃圾數據定義 (包含類別、名稱、得分、尺寸與SVG圖樣/圖示定義)
-        const TRASH_TYPES = [
+        let historyData = [];
+
+        // 體重等級定義 (衛福部標準)
+        const BMI_CATEGORIES = [
             {
-                type: 'plastic_bottle',
-                name: '寶特瓶',
-                score: 20,
-                size: 'medium', // 40-50px
-                width: 42,
-                height: 42,
-                color: 'text-blue-500',
-                svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-full h-full text-cyan-600 drop-shadow"><path d="M9 3h6v3H9z" fill="currentColor"/><path d="M8 6h8l1 3v11a2 2 0 01-2 2H9a2 2 0 01-2-2V9l1-3z" fill="#38bdf8" opacity="0.8"/><path d="M9 12h6M9 15h6" stroke="#ffffff" stroke-width="1.5"/></svg>`
+                name: '體重過輕',
+                max: 18.5,
+                colorClass: 'bg-sky-500 text-white',
+                badgeBg: 'bg-sky-100 text-sky-800 border-sky-300',
+                textColor: 'text-sky-600',
+                advice: '您的體重偏輕，建議均衡增加蛋白質與熱量攝取，配合適度肌力訓練，增肌健體。',
+                sdgs: '選擇營養豐富的在地原型食物（SDG 3/12），避免過度加工的低營養零食。'
             },
             {
-                type: 'paper_box',
-                name: '紙餐盒',
-                score: 10,
-                size: 'small', // 30-35px
-                width: 36,
-                height: 36,
-                color: 'text-amber-700',
-                svg: `<svg viewBox="0 0 24 24" fill="none" class="w-full h-full"><path d="M3 8l9-4 9 4-9 4-9-4z" fill="#d97706"/><path d="M3 8v8l9 4V12L3 8z" fill="#b45309"/><path d="M21 8v8l-9 4V12l9-4z" fill="#f59e0b"/></svg>`
+                name: '健康體位',
+                max: 24.0,
+                colorClass: 'bg-emerald-500 text-white',
+                badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                textColor: 'text-emerald-600',
+                advice: '非常棒！您的體重處於理想健康範圍，請繼續保持均衡飲食與每週 150 分鐘的中強度運動。',
+                sdgs: '維持低碳蔬食飲食（減少肉類攝取）、多走路或騎單車替代開車，實踐永續健康生活。'
             },
             {
-                type: 'plastic_bag',
-                name: '塑膠袋',
-                score: 10,
-                size: 'small',
-                width: 34,
-                height: 34,
-                color: 'text-slate-300',
-                svg: `<svg viewBox="0 0 24 24" fill="none" class="w-full h-full opacity-85"><path d="M6 9C6 6.5 8 5 12 5C16 5 18 6.5 18 9V20C18 21 16.5 22 12 22C7.5 22 6 21 6 20V9Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/><path d="M9 5V8M15 5V8" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>`
+                name: '體重過重',
+                max: 27.0,
+                colorClass: 'bg-amber-500 text-white',
+                badgeBg: 'bg-amber-100 text-amber-800 border-amber-300',
+                textColor: 'text-amber-600',
+                advice: '體重稍微偏高囉！建議稍微控制精緻糖與高油食物攝取，並增加每日活動量。',
+                sdgs: '多食用在地時令蔬果，減少外帶一次性餐具使用，健康減重同時保護海洋。'
             },
             {
-                type: 'styrofoam',
-                name: '保麗龍箱',
-                score: 30,
-                size: 'large', // 55-65px
-                width: 60,
-                height: 50,
-                color: 'text-slate-100',
-                svg: `<svg viewBox="0 0 24 24" fill="none" class="w-full h-full"><rect x="2" y="5" width="20" height="14" rx="2" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><path d="M2 9h20" stroke="#94a3b8" stroke-width="1.5"/><circle cx="7" cy="14" r="1" fill="#cbd5e1"/><circle cx="12" cy="14" r="1" fill="#cbd5e1"/><circle cx="17" cy="14" r="1" fill="#cbd5e1"/></svg>`
+                name: '輕度肥胖',
+                max: 30.0,
+                colorClass: 'bg-orange-500 text-white',
+                badgeBg: 'bg-orange-100 text-orange-800 border-orange-300',
+                textColor: 'text-orange-600',
+                advice: '已達輕度肥胖，建議調整飲食結構（多纖維、高蛋白質），適度進行有氧與力量運動。',
+                sdgs: '制定健康減脂目標，避免極端節食造成食物浪費（SDG 12）。'
             },
             {
-                type: 'drink_cup',
-                name: '飲料杯',
-                score: 20,
-                size: 'medium',
-                width: 40,
-                height: 48,
-                color: 'text-rose-400',
-                svg: `<svg viewBox="0 0 24 24" fill="none" class="w-full h-full"><path d="M6 7l1.5 14h9L18 7H6z" fill="#fb7185"/><path d="M5 4h14v3H5z" fill="#fda4af"/><path d="M13 1v3" stroke="#e11d48" stroke-width="2" stroke-linecap="round"/></svg>`
+                name: '中度肥胖',
+                max: 35.0,
+                colorClass: 'bg-rose-500 text-white',
+                badgeBg: 'bg-rose-100 text-rose-800 border-rose-300',
+                textColor: 'text-rose-600',
+                advice: '屬於中度肥胖，建議諮詢醫師或營養師尋求專業飲食與運動指導，預防慢性疾病。',
+                sdgs: '建立可持續的健康習慣，減少慢性病發生的醫療資源耗損（SDG 3）。'
             },
             {
-                type: 'driftwood_can',
-                name: '漂流木與廢罐頭',
-                score: 30,
-                size: 'large',
-                width: 62,
-                height: 52,
-                color: 'text-amber-900',
-                svg: `<svg viewBox="0 0 24 24" fill="none" class="w-full h-full"><path d="M3 17c5-3 12 1 18-2M2 12c6-1 11 3 19-1" stroke="#78350f" stroke-width="4" stroke-linecap="round"/><circle cx="17" cy="9" r="4" fill="#94a3b8" stroke="#475569" stroke-width="1.5"/><path d="M15 8h4" stroke="#e2e8f0" stroke-width="1"/></svg>`
+                name: '重度肥胖',
+                max: Infinity,
+                colorClass: 'bg-red-700 text-white',
+                badgeBg: 'bg-red-100 text-red-900 border-red-300',
+                textColor: 'text-red-700',
+                advice: '屬於重度肥胖，健康風險較高，強烈建議接受專業醫護團隊的健康與減重管理規劃。',
+                sdgs: '關注自身心理與身體健康，尋求社區健康資源支持，實踐全人健康。'
             }
         ];
 
-        // 遊戲狀態變數
-        const TOTAL_TRASH_COUNT = 50;
-        let currentScore = 0;
-        let cleanedCount = 0;
-        let currentLevel = 1;
+        // 計算 BMI 核心函數
+        function calculateBMI() {
+            const heightInput = document.getElementById('height');
+            const weightInput = document.getElementById('weight');
 
-        // DOM 元素引用
-        const beachArea = document.getElementById('beach-area');
-        const scoreDisplay = document.getElementById('score-display');
-        const progressDisplay = document.getElementById('progress-display');
-        const levelDisplay = document.getElementById('level-display');
-        const successModal = document.getElementById('success-modal');
-        const modalScore = document.getElementById('modal-score');
+            const heightCm = parseFloat(heightInput.value);
+            const weightKg = parseFloat(weightInput.value);
 
-        // 初始化遊戲
-        window.onload = function() {
-            initGame();
-        };
-
-        // 初始化/重置垃圾散列
-        function initGame() {
-            // 清空沙灘區域的舊垃圾
-            beachArea.innerHTML = `
-                <div class="absolute top-8 left-[15%] text-amber-600/30 text-lg"><i class="fa-solid fa-note-sticky rotate-12"></i></div>
-                <div class="absolute top-20 right-[25%] text-amber-700/20 text-xl"><i class="fa-solid fa-cubes"></i></div>
-                <div class="absolute bottom-12 left-[40%] text-amber-800/20 text-sm"><i class="fa-solid fa-circle"></i></div>
-                <div class="absolute bottom-8 right-[10%] text-amber-700/30 text-2xl"><i class="fa-solid fa-water"></i></div>
-            `;
-            
-            cleanedCount = 0;
-            updateUI();
-            closeModal();
-
-            // 產生 50 個隨機位置與角度的垃圾
-            for (let i = 0; i < TOTAL_TRASH_COUNT; i++) {
-                createRandomTrash(i);
+            // 即時驗證
+            if (!heightCm || !weightKg || heightCm < 50 || heightCm > 250 || weightKg < 20 || weightKg > 300) {
+                return;
             }
-        }
 
-        // 建立單個垃圾元素
-        function createRandomTrash(id) {
-            // 隨機選擇一種垃圾類別
-            const randomType = TRASH_TYPES[Math.floor(Math.random() * TRASH_TYPES.length)];
-            
-            const trashEl = document.createElement('div');
-            trashEl.className = 'trash-item select-none';
-            trashEl.dataset.id = id;
-            trashEl.dataset.score = randomType.score;
+            const heightM = heightCm / 100;
+            const bmi = weightKg / (heightM * heightM);
+            const roundedBMI = bmi.toFixed(1);
 
-            // 隨機角度 (0 到 360 度)
-            const randomRotation = Math.floor(Math.random() * 360);
-            
-            // 隨機位置限制在沙灘區域下半部 (邊界保護，防止超出一頁)
-            // X 座標： 3% ~ 90%
-            // Y 座標： 8% ~ 82%
-            const randomX = Math.floor(Math.random() * 87) + 3;
-            const randomY = Math.floor(Math.random() * 74) + 8;
+            // 計算標準體重區間 (BMI 18.5 - 23.9)
+            const minIdealWeight = (18.5 * heightM * heightM).toFixed(1);
+            const maxIdealWeight = (23.9 * heightM * heightM).toFixed(1);
 
-            trashEl.style.width = `${randomType.width}px`;
-            trashEl.style.height = `${randomType.height}px`;
-            trashEl.style.left = `${randomX}%`;
-            trashEl.style.top = `${randomY}%`;
-            trashEl.style.transform = `rotate(${randomRotation}deg)`;
-
-            // 載入 SVG 圖案
-            trashEl.innerHTML = randomType.svg;
-
-            // 點擊清理事件
-            trashEl.addEventListener('click', function(e) {
-                e.stopPropagation();
-                cleanTrash(trashEl, randomType.score, e.clientX, e.clientY);
-            });
-
-            // 支援行動裝置觸控
-            trashEl.addEventListener('touchstart', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                const touch = e.touches[0];
-                cleanTrash(trashEl, randomType.score, touch.clientX, touch.clientY);
-            }, { passive: false });
-
-            beachArea.appendChild(trashEl);
-        }
-
-        // 清理垃圾邏輯
-        function cleanTrash(element, score, clientX, clientY) {
-            if (element.classList.contains('cleaned')) return;
-            element.classList.add('cleaned');
-
-            // 增加分數與統計
-            currentScore += score;
-            cleanedCount++;
-            
-            // 顯示浮動 +得分 特效
-            showFloatingScore(score, clientX, clientY);
-
-            // 移除垃圾元素 (縮小淡出)
-            element.style.transform += ' scale(0)';
-            element.style.opacity = '0';
-            setTimeout(() => {
-                element.remove();
-            }, 150);
+            // 判斷等級
+            let category = BMI_CATEGORIES[BMI_CATEGORIES.length - 1];
+            if (bmi < 18.5) {
+                category = BMI_CATEGORIES[0];
+            } else if (bmi < 24.0) {
+                category = BMI_CATEGORIES[1];
+            } else if (bmi < 27.0) {
+                category = BMI_CATEGORIES[2];
+            } else if (bmi < 30.0) {
+                category = BMI_CATEGORIES[3];
+            } else if (bmi < 35.0) {
+                category = BMI_CATEGORIES[4];
+            }
 
             // 更新 UI
-            updateUI();
+            updateResultsUI(roundedBMI, category, minIdealWeight, maxIdealWeight);
 
-            // 檢查是否完全清理完成 (50/50)
-            if (cleanedCount >= TOTAL_TRASH_COUNT) {
-                setTimeout(() => {
-                    showSuccessModal();
-                }, 500);
-            }
+            // 記錄到歷史列表
+            addHistoryRecord(heightCm, weightKg, roundedBMI, category);
         }
 
-        // 浮動得分數字動畫
-        function showFloatingScore(score, x, y) {
-            const floatEl = document.createElement('div');
-            floatEl.className = 'score-float text-amber-300 text-xl md:text-2xl';
-            floatEl.innerText = `+${score}`;
-            floatEl.style.left = `${x}px`;
-            floatEl.style.top = `${y}px`;
+        // 更新結果面板 UI
+        function updateResultsUI(bmi, category, minWeight, maxWeight) {
+            const bmiDisplay = document.getElementById('bmiValue');
+            const badge = document.getElementById('categoryBadge');
+            const idealRange = document.getElementById('idealWeightRange');
+            const healthAdvice = document.getElementById('healthAdvice');
+            const sdgsAdvice = document.getElementById('sdgsAdvice');
+            const pointer = document.getElementById('gaugePointer');
 
-            document.body.appendChild(floatEl);
+            // 顯示數值與顏色
+            bmiDisplay.innerText = bmi;
+            bmiDisplay.className = `text-5xl md:text-6xl font-black ${category.textColor} tracking-tight transition-all`;
 
+            badge.innerText = category.name;
+            badge.className = `px-3 py-1 rounded-full text-xs font-bold ${category.badgeBg} border transition-all`;
+
+            idealRange.innerText = `您的理想體重範圍為 ${minWeight} ~ ${maxWeight} kg`;
+
+            healthAdvice.innerText = category.advice;
+            sdgsAdvice.innerText = category.sdgs;
+
+            // 計算儀表板指針位置 (對應 15 到 40 的百分比)
+            let percent = ((parseFloat(bmi) - 15) / (40 - 15)) * 100;
+            percent = Math.max(2, Math.min(98, percent)); // 限制在 2% ~ 98% 之間
+
+            pointer.classList.remove('hidden');
             setTimeout(() => {
-                floatEl.remove();
-            }, 800);
+                pointer.style.left = `${percent}%`;
+                pointer.classList.remove('opacity-0');
+            }, 50);
         }
 
-        // 更新數據面板
-        function updateUI() {
-            scoreDisplay.innerText = currentScore;
-            progressDisplay.innerText = `${cleanedCount} / ${TOTAL_TRASH_COUNT}`;
-            levelDisplay.innerText = `第 ${currentLevel} 關`;
+        // 新增歷史紀錄
+        function addHistoryRecord(height, weight, bmi, category) {
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            const record = {
+                time: timeStr,
+                height: height,
+                weight: weight,
+                bmi: bmi,
+                category: category.name,
+                badgeClass: category.badgeBg
+            };
+
+            historyData.unshift(record);
+            if (historyData.length > 5) historyData.pop(); // 只留最新 5 筆
+
+            renderHistoryUI();
         }
 
-        // 顯示成功過關視窗
-        function showSuccessModal() {
-            modalScore.innerText = `${currentScore} 分`;
-            successModal.classList.remove('opacity-0', 'pointer-events-none');
-            const card = successModal.querySelector('div');
-            card.classList.remove('scale-95');
-            card.classList.add('scale-100');
+        // 渲染歷史紀錄
+        function renderHistoryUI() {
+            const historyList = document.getElementById('historyList');
+            if (historyData.length === 0) {
+                historyList.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400">尚無歷史紀錄</td></tr>`;
+                return;
+            }
+
+            historyList.innerHTML = historyData.map(item => `
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="py-2 font-mono text-slate-400">${item.time}</td>
+                    <td class="py-2">${item.height}cm / ${item.weight}kg</td>
+                    <td class="py-2 font-bold">${item.bmi}</td>
+                    <td class="py-2">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${item.badgeClass}">
+                            ${item.category}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        // 關閉 Modal
-        function closeModal() {
-            successModal.classList.add('opacity-0', 'pointer-events-none');
-            const card = successModal.querySelector('div');
-            card.classList.remove('scale-100');
-            card.classList.add('scale-95');
+        // 清空歷史
+        function clearHistory() {
+            historyData = [];
+            renderHistoryUI();
         }
 
-        // 前往下一關 (累積分數並載入全新散落垃圾)
-        function nextLevel() {
-            currentLevel++;
-            initGame();
+        // 重置表單
+        function resetForm() {
+            document.getElementById('bmiForm').reset();
+            document.getElementById('bmiValue').innerText = '--.--';
+            document.getElementById('bmiValue').className = 'text-5xl md:text-6xl font-black text-slate-300 tracking-tight';
+            document.getElementById('categoryBadge').innerText = '待計算';
+            document.getElementById('categoryBadge').className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-200 text-slate-600';
+            document.getElementById('idealWeightRange').innerText = '請輸入身高與體重進行計算';
+            document.getElementById('healthAdvice').innerText = '請先完成資料輸入以獲取專屬健康與飲食評估。';
+            document.getElementById('sdgsAdvice').innerText = '結合蔬食減碳、規律運動與低碳出行，促進良好健康與地球和平永續。';
+            
+            const pointer = document.getElementById('gaugePointer');
+            pointer.classList.add('opacity-0');
+            setTimeout(() => pointer.classList.add('hidden'), 300);
         }
 
-        // 重新開始遊戲 (分數歸零從頭開始)
-        function restartGame() {
-            currentScore = 0;
-            currentLevel = 1;
-            initGame();
+        // 即時輸入檢查
+        function validateInputs() {
+            // 可在此加入自動算數或即時檢核邏輯
         }
     </script>
 </body>
